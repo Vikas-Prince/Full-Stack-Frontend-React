@@ -3,6 +3,8 @@ import Header from "./Header";
 import Footer from "./Footer";
 import Main from "./Main";
 import Home from "./Home/Home";
+import Listing from "./lisitng/";
+
 const Routing = () => {
   return (
     <BrowserRouter>
@@ -10,6 +12,7 @@ const Routing = () => {
       <Routes>
         <Route path="/" element={<Main />}>
           <Route index element={<Home />} />
+          <Route path="listing/:mealId" element={<Listing />} />
         </Route>
       </Routes>
       <Footer />
