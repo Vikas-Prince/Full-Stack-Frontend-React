@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import "./Search.css";
 
 const base_url = process.env.REACT_APP_API_URL;
+// const base_url = "http://localhost:8080";
+
 const Search = () => {
   const [location, setLocation] = useState([]);
   const [restaurants, setRestaurants] = useState([]);
