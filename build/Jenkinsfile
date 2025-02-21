@@ -29,7 +29,7 @@ pipeline {
         // Checkout source code from GitHub
         stage("Checkout SCM From GitHub") {
             steps {
-                git branch: 'main', url: 'https://github.com/Vikas-Prince/Food-Delivery-Backend-Node.git'  
+                git branch: 'main', url: 'https://github.com/Vikas-Prince/Food-Delivery-Frontend-Node.git'  
                 echo "Code downloaded successfully"  
             }
         }
@@ -57,10 +57,9 @@ pipeline {
                     withSonarQubeEnv('sonar-scanner') {  
                         sh """
                         $SONAR_HOME/bin/sonar-scanner \ 
-                            -Dsonar.projectName=MERN-Backend \ 
-                            -Dsonar.projectKey="MERN-Backend" \ 
+                            -Dsonar.projectName=MERN-Frontend \ 
+                            -Dsonar.projectKey="MERN-Frontend" \ 
                             -Dsonar.sources=. \  
-                            -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info 
                         """
                     }
                 }
@@ -83,7 +82,7 @@ pipeline {
         stage("Build Docker Image") {
             steps {
                 withDockerRegistry(credentialsId: 'docker-cred', url: "https://docker.io") { 
-                    sh "docker build -t vikasprince/MERN-Backend:${params.IMAGE_VERSION}-${params.DEPLOY_ENV} ." 
+                    sh "docker build -t vikasprince/MERN-Frontend:${params.IMAGE_VERSION}-${params.DEPLOY_ENV} ." 
                     echo "Docker image built successfully"  
                 }
             }
@@ -92,7 +91,7 @@ pipeline {
         // Trivy scan the Docker image for vulnerabilities
         stage("Trivy Docker Image Scans for Vulnerabilities") {
             steps {
-                sh "trivy image --format json -o trivy-image-report.json vikasprince/MERN-Backend:${params.IMAGE_VERSION}-${params.DEPLOY_ENV}"  
+                sh "trivy image --format json -o trivy-image-report.json vikasprince/MERN-Frontend:${params.IMAGE_VERSION}-${params.DEPLOY_ENV}"  
                 echo "Docker image scan completed" 
             }
         }
@@ -101,7 +100,7 @@ pipeline {
         stage("Push Image to Docker Hub") {
             steps {
                 withDockerRegistry(credentialsId: 'docker-cred', url: "https://docker.io") { 
-                    sh "docker push vikasprince/MERN-Backend:${params.IMAGE_VERSION}-${params.DEPLOY_ENV}"  
+                    sh "docker push vikasprince/MERN-Frontend:${params.IMAGE_VERSION}-${params.DEPLOY_ENV}"  
                     echo "Successfully pushed Docker image to Docker Hub"  
                 }
             }
