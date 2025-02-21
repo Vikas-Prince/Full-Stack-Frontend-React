@@ -6,8 +6,13 @@ pipeline {
         dockerTool 'docker' 
     }
 
+    parameters {
+        string(name: 'IMAGE_VERSION', defaultValue: 'latest', description: 'Docker tag')
+        choice(name: 'DEPLOY_ENV', choices: ['blue', 'green'], description: 'Select environment for deployment')
+    }
+
     environment {
-        SONAR_HOME = 'sonar-scanner'  
+        SONAR_HOME = tool 'sonar-scanner'  
     }
 
     stages {
@@ -78,7 +83,7 @@ pipeline {
         stage("Build Docker Image") {
             steps {
                 withDockerRegistry(credentialsId: 'docker-cred', url: "https://docker.io") { 
-                    sh "docker build -t vikasprince/MERN-Backend:v1 ." 
+                    sh "docker build -t vikasprince/MERN-Backend:${params.IMAGE_VERSION}-${params.DEPLOY_ENV} ." 
                     echo "Docker image built successfully"  
                 }
             }
@@ -87,7 +92,7 @@ pipeline {
         // Trivy scan the Docker image for vulnerabilities
         stage("Trivy Docker Image Scans for Vulnerabilities") {
             steps {
-                sh "trivy image --format json -o trivy-image-report.json vikasprince/MERN-Backend:v1"  
+                sh "trivy image --format json -o trivy-image-report.json vikasprince/MERN-Backend:${params.IMAGE_VERSION}-${params.DEPLOY_ENV}"  
                 echo "Docker image scan completed" 
             }
         }
@@ -96,8 +101,44 @@ pipeline {
         stage("Push Image to Docker Hub") {
             steps {
                 withDockerRegistry(credentialsId: 'docker-cred', url: "https://docker.io") { 
-                    sh "docker push vikasprince/MERN-Backend:v1"  
+                    sh "docker push vikasprince/MERN-Backend:${params.IMAGE_VERSION}-${params.DEPLOY_ENV}"  
                     echo "Successfully pushed Docker image to Docker Hub"  
+                }
+            }
+        }
+
+        stage("Clone GitOps repository") {
+            steps{
+                script{
+                    git branch: 'main', url: 'https://github.com/Vikas-Prince/Food-Delivery-Infra-Setup.git'  
+                    echo "gitOps repo cloned successfully"  
+                }
+            }
+        }
+
+        // Update GitOps repository dynamically
+        stage("Update GitOps repository"){
+            steps{
+                script{
+                    withCredentials([gitUserNamePassword(credentialsId: 'git-cred', gitToolName: 'Default')]){
+                        dir(food-Delivery-GitOps){
+                        sh '''
+                            sed -i "s|image: vikasprince/MERN-Frontend:.*|image: vikasprince/MERN-Frontend:${params.IMAGE_VERSION}-${params.DEPLOY_ENV}|" ./base/frontend/frontend-deployment.yml
+                        '''
+                        echo "Successfully updated Docker tag in manifest file"
+                        }
+
+                        dir(food-Delivery-GitOps){
+                        sh '''
+                            git config --global user.name "jenkins"
+                            git config --global user.email "jenkins@gmail.com"
+                            git add .
+                            git commit -m "updated Version:${params.IMAGE_VERSION} Environment:${params.DEPLOY_ENV} of docker image by jenkins"
+                            git push origin main
+                        '''
+                        echo "Successfully updated version and environment"
+                        }
+                    }
                 }
             }
         }
