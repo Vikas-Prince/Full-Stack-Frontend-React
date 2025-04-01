@@ -1,5 +1,5 @@
 // basic.test.js
-import React from "react"; // <-- Add this line
+import React from "react";
 
 import { render } from "@testing-library/react";
 import HelloWorld from "./src/test";
